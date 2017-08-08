@@ -33,6 +33,18 @@ export default class SelectOneHandler {
     }
     return this;
   }
+
+  public whereAny(fieldsAndValues: any) : this {
+    let subStatements = [];
+    for (let key in fieldsAndValues) {
+      let value = fieldsAndValues[key];
+      subStatements.push('?? = ?');
+      this.whereValues.push(key, value);
+    }
+    let statement = subStatements.join(' OR ');
+    this.whereStatements.push(`( ${statement} )`);
+    return this;
+  }
   
   public postprocess(callback: (record: any) => void) : this {
     this.callback = callback;
@@ -40,8 +52,8 @@ export default class SelectOneHandler {
   }
   
   public execute() : void {
-    let statement: string = 'SELECT * FROM ??';
-    let values:    any[]  = [ this.table ];
+    let statement: string = 'SELECT ??.* FROM ??';
+    let values:    any[]  = [ this.table, this.table ];
     
     if (this.whereStatements) {
       statement += ' WHERE ' + this.whereStatements.join(' AND ');

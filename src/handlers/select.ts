@@ -13,8 +13,11 @@ export default class SelectHandler {
   private response: any;
   private table:    string;
 
-  private whereStatements:  string[];
-  private whereValues:      any[];
+  private joinStatement: string;
+  private joinValues:    any[];
+
+  private whereStatements: string[];
+  private whereValues:     any[];
   
   private orderStatements: string[];
   private orderValues:     string[];
@@ -27,10 +30,17 @@ export default class SelectHandler {
   public constructor(response: any, table: string) {
     this.response        = response;
     this.table           = table;
+    this.joinStatement   = '';
+    this.joinValues      = [];
     this.whereStatements = [];
     this.whereValues     = [];
     this.orderStatements = [];
     this.orderValues     = [];
+  }
+  
+  public joinUsing(table, column) {
+    this.joinStatement += ' JOIN ?? USING (??)';
+    this.joinValues.push(table, column);
   }
 
   public where(fieldsAndValues: any) : this {
@@ -38,6 +48,29 @@ export default class SelectHandler {
       let value = fieldsAndValues[key];
       this.whereStatements.push('?? = ?');
       this.whereValues    .push(key, value);
+    }
+    return this;
+  }
+
+  public whereAny(fieldsAndValues: any) : this {
+    let subStatements = [];
+    for (let key in fieldsAndValues) {
+      let value = fieldsAndValues[key];
+      subStatements.push('?? = ?');
+      this.whereValues.push(key, value);
+    }
+    let statement = subStatements.join(' OR ');
+    this.whereStatements.push(`( ${statement} )`);
+    return this;
+  }
+
+  public whereIn(fieldsAndValues: any) : this {
+    for (let key in fieldsAndValues) {
+      let values = fieldsAndValues[key];
+      if (values) {
+        this.whereStatements.push('?? IN (?)');
+        this.whereValues    .push(key, values);
+      }
     }
     return this;
   }
@@ -73,8 +106,13 @@ export default class SelectHandler {
   }
   
   public execute() : void {
-    let statement: string = 'SELECT * FROM ??';
-    let values:    any[]  = [ this.table ];
+    let statement: string = 'SELECT ??.* FROM ??';
+    let values:    any[]  = [ this.table, this.table ];
+    
+    if (this.joinStatement) {
+      statement += this.joinStatement;
+      Array.prototype.push.apply(values, this.joinValues);
+    }
     
     if (this.whereStatements) {
       statement += ' WHERE ' + this.whereStatements.join(' AND ');
