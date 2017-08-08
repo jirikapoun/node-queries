@@ -1,12 +1,5 @@
 import * as mysql from 'mysql2';
-
-var connection = mysql.createConnection({
-  host:     "vps.jkapoun.cz",
-  port:      3306,
-  user:     "recepty",
-  password: "iUW$A916K8",
-  database: "recepty"
-});
+import db         from '../db';
 
 export default class SelectHandler {
   
@@ -138,7 +131,7 @@ export default class SelectHandler {
       values.push(this.offset);
     }
     
-    connection.query(statement, values, (error : any, records : any[]) => {
+    db.connection.query(statement, values, (error : any, records : any[]) => {
       if (error) {
         let sql = mysql.format(statement, values);
         console.error(error);

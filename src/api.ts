@@ -1,4 +1,6 @@
-import HandlerBuilder from './handler-builder';
-import Params         from './params';
+import db               from './db';
+import responseEnhancer from './response-enhancer';
+import Params           from './params';
+import HandlerBuilder   from './handler-builder';
 
-export { HandlerBuilder, Params };
+export { db, responseEnhancer, Params, HandlerBuilder };
