@@ -1,160 +1,51 @@
-import * as mysql from 'mysql2';
-import db         from '../db';
+import * as mysql       from 'mysql2';
+import db               from '../db';
+import EnhancedResponse from '../enhanced-response';
+import AbstractHandler  from './abstract';
 
-export default class SelectHandler {
+export default class SelectHandler extends AbstractHandler {
   
-  private response: any;
-  private table:    string;
-
-  private joinStatement: string;
-  private joinValues:    any[];
-
-  private whereStatements: string[];
-  private whereValues:     any[];
-  
-  private orderStatements: string[];
-  private orderValues:     string[];
-  
-  private limit:  number;
-  private offset: number;
-  
-  private callback : (record: any) => void;
-  
-  public constructor(response: any, table: string) {
-    this.response        = response;
-    this.table           = table;
-    this.joinStatement   = '';
-    this.joinValues      = [];
-    this.whereStatements = [];
-    this.whereValues     = [];
-    this.orderStatements = [];
-    this.orderValues     = [];
+  public constructor(response: EnhancedResponse, table: string) {
+    let statement = mysql.format(
+      'SELECT ??.* FROM ??',
+      [ table, table ]
+    );
+    super(response, statement, table);
   }
   
-  public joinUsing(table, column) {
-    this.joinStatement += ' JOIN ?? USING (??)';
-    this.joinValues.push(table, column);
+  public joinUsing(joinTable: string, using: string): this {
+    return this.createJoinUsingStatement(joinTable, using);
   }
 
-  public where(fieldsAndValues: any) : this {
-    for (let key in fieldsAndValues) {
-      let value = fieldsAndValues[key];
-      this.whereStatements.push('?? = ?');
-      this.whereValues    .push(key, value);
-    }
-    return this;
+  protected where(criteria: any): this {
+    return this.createWhereStatement(criteria);
   }
 
-  public whereAny(fieldsAndValues: any) : this {
-    let subStatements = [];
-    for (let key in fieldsAndValues) {
-      let value = fieldsAndValues[key];
-      subStatements.push('?? = ?');
-      this.whereValues.push(key, value);
-    }
-    let statement = subStatements.join(' OR ');
-    this.whereStatements.push(`( ${statement} )`);
-    return this;
+  protected whereAny(criteria: any): this {
+    return this.createWhereStatement(criteria, true);
   }
 
-  public whereIn(fieldsAndValues: any) : this {
-    for (let key in fieldsAndValues) {
-      let values = fieldsAndValues[key];
-      if (values) {
-        this.whereStatements.push('?? IN (?)');
-        this.whereValues    .push(key, values);
-      }
-    }
-    return this;
+  protected whereIfNotEmpty(criteria: any): this {
+    return this.createWhereStatement(criteria, false, true);
   }
   
-  public whereLike(fieldsAndValues: any) : this {
-    for (let key in fieldsAndValues) {
-      let value = fieldsAndValues[key];
-      if (value) {
-        this.whereStatements.push("?? LIKE CONCAT('%', ?, '%')");
-        this.whereValues    .push(key, value);
-      }
-    }
-    return this;
+  protected whereLike(criteria: any): this {
+    return this.createWhereLikeStatement(criteria, false);
   }
   
-  public orderBy(column: string, ascOrDesc: string) : this { /** @todo enum? */
-    if (!ascOrDesc)
-      ascOrDesc = 'ASC';
-    this.orderStatements.push(`?? ${ascOrDesc}`);
-    this.orderValues    .push(column);
-    return this;
+  protected orderBy(column: string, ascOrDesc: string): this {
+    return this.createOrderStatement(column, ascOrDesc);
   }
   
-  public limitOffset(limit: number, offset: number): this {
-    this.limit  = limit;
-    this.offset = offset;
-    return this;
+  protected limitOffset(limit: number, offset: number): this {
+    return this.setLimitOffset(limit, offset);
   }
   
-  public postprocess(callback: (record: any) => void) : this {
-    this.callback = callback;
-    return this;
+  protected postprocess(callback: (record: any) => void): this {
+    return this.setPostprocessor(callback);
   }
   
-  public execute() : void {
-    let statement: string = 'SELECT ??.* FROM ??';
-    let values:    any[]  = [ this.table, this.table ];
-    
-    if (this.joinStatement) {
-      statement += this.joinStatement;
-      Array.prototype.push.apply(values, this.joinValues);
-    }
-    
-    if (this.whereStatements) {
-      statement += ' WHERE ' + this.whereStatements.join(' AND ');
-      Array.prototype.push.apply(values, this.whereValues);
-    }
-    
-    if (this.orderStatements) {
-      statement += ' ORDER BY ' + this.orderStatements.join(', ');
-      Array.prototype.push.apply(values, this.orderValues);
-    }
-    
-    if (this.limit >= 0) {
-      statement += ' LIMIT ?';
-      values.push(this.limit);
-      
-      if (this.offset > 0) {
-        statement += ' OFFSET ?';
-        values.push(this.offset);
-      }
-    }
-    else if (this.offset > 0) {
-      statement += ' LIMIT 18446744073709551615 OFFSET ?';
-      values.push(this.offset);
-    }
-    
-    db.connection.query(statement, values, (error : any, records : any[]) => {
-      if (error) {
-        let sql = mysql.format(statement, values);
-        console.error(error);
-        console.trace('Query failed: ' + sql);
-        return this.response.internalServerError();
-      }
-      else {
-        if (this.callback) {
-          try {
-            for (let i = 0; i < records.length; i++)
-              this.callback(records[i]);
-            return this.response.handlers.returnRecords(records);
-          }
-          catch (e) {
-            console.trace(e);
-            return this.response.internalServerError();
-          }
-        }
-        else {
-          return this.response.handlers.returnRecords(records);
-        }
-      }
-    });
+  protected returnResponse(response: EnhancedResponse, records: any[]): void {
+    response.handlers.returnRecords(records);
   }
 }
-

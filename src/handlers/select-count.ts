@@ -3,11 +3,11 @@ import db               from '../db';
 import EnhancedResponse from '../enhanced-response';
 import AbstractHandler  from './abstract';
 
-export default class SelectOneHandler extends AbstractHandler {
+export default class SelectCountHandler extends AbstractHandler {
   
   public constructor(response: EnhancedResponse, table: string) {
     let statement = mysql.format(
-      'SELECT ??.* FROM ??',
+      'SELECT COUNT(*) AS "count" FROM ??',
       [ table, table ]
     );
     super(response, statement, table);
@@ -24,13 +24,17 @@ export default class SelectOneHandler extends AbstractHandler {
   protected whereAny(criteria: any): this {
     return this.createWhereStatement(criteria, true);
   }
+
+  protected whereIfNotEmpty(criteria: any): this {
+    return this.createWhereStatement(criteria, false, true);
+  }
   
-  protected postprocess(callback: (record: any) => void): this {
-    return this.setPostprocessor(callback);
+  protected whereLike(criteria: any): this {
+    return this.createWhereLikeStatement(criteria, false);
   }
   
   protected returnResponse(response: EnhancedResponse, records: any[]): void {
-    response.handlers.returnFirstRecord(records);
+    let count: number = records[0]['count'];
+    response.ok(count.toString(), 'text/plain');
   }
 }
-
