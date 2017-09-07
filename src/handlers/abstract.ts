@@ -1,4 +1,5 @@
 import * as mysql       from 'mysql2';
+import { Observable }   from 'rxjs';
 import EnhancedResponse from '../enhanced-response';
 import Query            from '../query';
 import IQuery           from '../interfaces/query';
@@ -8,7 +9,7 @@ import ForeignCheck     from '../checks/foreign';
 import JoinedCheck      from '../checks/joined';
 import db               from '../db';
 
-export default abstract class AbstractHandler {
+abstract class AbstractHandler {
   
   private response: EnhancedResponse;
   private query:    Query;
@@ -21,7 +22,6 @@ export default abstract class AbstractHandler {
   
   private preprocessor:  (record: any) => void;
   private postprocessor: (record: any) => void;
-  private location:          string;
   
   private checks: ICheck[];
   
@@ -80,12 +80,12 @@ export default abstract class AbstractHandler {
     return this;
   }
   
-  protected createOrderStatement(column: string, ascOrDesc: string): this { /** @todo enum? */
+  protected createOrderByStatement(column: string, ascOrDesc: string): this { /** @todo enum? */
     let statement = mysql.format(
       '?? ' + (ascOrDesc || 'ASC'),
       [ column ]
     );
-    this.query.addJoinStatement(statement);
+    this.query.addOrderByStatement(statement);
     return this;
   }
   
@@ -145,17 +145,70 @@ export default abstract class AbstractHandler {
     return this;
   }
   
-  protected setLocation(location: string): this {
-    this.location = location;
-    return this;
-  }
-  
   protected abstract returnResponse(response: EnhancedResponse, records: any[]): void;
   
   public execute(): void {
+    
+    if (this.notNullFields) {
+      for (let field of this.notNullFields) {
+        if (this.record[field] == null)
+          return this.response.badRequest();
+      }
+    }
+    
+    if (this.unsettableFields) {
+      for (let field of this.unsettableFields) {
+        if (this.record[field] == null)
+          delete this.record[field];
+        else
+          return this.response.badRequest();
+      }
+    }
+    
+    for (let field in this.expectedValues) {
+      if (this.record[field] == null)
+        this.record[field] = this.expectedValues[field];
+      else if (this.record[field] !== this.expectedValues[field])
+        return this.response.badRequest();
+    }
+    
+    if (this.preprocessor) {
+      try {
+        this.preprocessor(this.record);
+      }
+      catch (e) {
+        console.trace(e);
+        return this.response.badRequest();
+      }
+    }
+    
+    if (this.record) {
+      let setStatement = mysql.escape(this.record);
+      this.query.setSetStatement(setStatement);
+    }
+    
+    if (this.checks) {
+      let whereStatements = this.query.getWhereStatements();
+      let observables = this.checks.map(check => check.check(whereStatements));
+      Observable
+        .combineLatest(observables)
+        .subscribe(results => {
+          let success = results.every(result => result === true);
+          if (success)
+            this.runQuery();
+          else
+            this.response.forbidden();
+        });
+    }
+    else
+      this.runQuery();
+      
+  }
+  
+  private runQuery(): void {
     let statement = this.query.toString();
     db.query(statement, (error: any, records: any[]) => {
-      if (error) {;
+      if (error) {
         console.error(error);
         console.trace('Query failed: ' + statement);
         return this.response.internalServerError();
@@ -181,3 +234,4 @@ export default abstract class AbstractHandler {
   
 }
 
+export default AbstractHandler;

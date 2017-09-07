@@ -2,7 +2,7 @@ import EnhancedResponse   from './enhanced-response';
 import SelectHandler      from './handlers/select';
 import SelectCountHandler from './handlers/select-count';
 import SelectOneHandler   from './handlers/select-one';
-import CustomQueryHandler from './handlers/custom-query';
+import InsertHandler      from './handlers/insert';
 
 export default class HandlerBuilder {
   
@@ -22,6 +22,10 @@ export default class HandlerBuilder {
   
   selectOneFrom(table: string) {
     return new SelectOneHandler(this.response, table);
+  }
+  
+  insertInto(table: string) {
+    return new InsertHandler(this.response, table);
   }
   
 }

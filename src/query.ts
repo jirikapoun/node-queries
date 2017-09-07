@@ -1,6 +1,7 @@
 export default class Query {
   
   private statement:       string;
+  private setStatement:    string;
   private joinStatements:  string[];
   private whereStatements: string[];
   private orderStatements: string[];
@@ -25,7 +26,7 @@ export default class Query {
     return this;
   }
   
-  public addOrderStatement(statement: string): this {
+  public addOrderByStatement(statement: string): this {
     if (!this.orderStatements)
       this.orderStatements = [];
     this.orderStatements.push(statement);
@@ -38,17 +39,29 @@ export default class Query {
     return this;
   }
   
+  public setSetStatement(statement: string): this {
+    this.setStatement = statement;
+    return this;
+  }
+  
+  public getWhereStatements(): string[] {
+    return this.whereStatements;
+  }
+  
   public toString(): string {
     let statement = this.statement;
+    
+    if (this.setStatement != null)
+      statement += ' SET ' + this.setStatement;
     
     if (this.joinStatements && this.joinStatements.length > 0)
       statement += ' ' + this.joinStatements.join(' ');
       
     if (this.whereStatements && this.whereStatements.length > 0)
-      return ' WHERE ' + this.whereStatements.join(' AND ');
+      statement += ' WHERE ' + this.whereStatements.join(' AND ');
       
     if (this.orderStatements && this.orderStatements.length > 0)
-      return ' ORDER BY ' + this.orderStatements.join(', ');
+      statement += ' ORDER BY ' + this.orderStatements.join(', ');
       
     if (this.limit >= 0) {
       statement += ' LIMIT ' + this.limit;
@@ -57,6 +70,8 @@ export default class Query {
     }
     else if (this.offset > 0)
       statement += ' LIMIT 18446744073709551615 OFFSET ' + this.offset;
+      
+    return statement;
   }
   
 }

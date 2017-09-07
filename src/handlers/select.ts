@@ -34,7 +34,7 @@ export default class SelectHandler extends AbstractHandler {
   }
   
   protected orderBy(column: string, ascOrDesc: string): this {
-    return this.createOrderStatement(column, ascOrDesc);
+    return this.createOrderByStatement(column, ascOrDesc);
   }
   
   protected limitOffset(limit: number, offset: number): this {
