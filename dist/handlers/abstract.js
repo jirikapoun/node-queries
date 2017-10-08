@@ -17,6 +17,11 @@ class AbstractHandler {
         this.query.addJoinStatement(statement);
         return this;
     }
+    createJoinOnStatement(joinTable, firstKey, secondKey) {
+        let statement = mysql.format('JOIN ?? ON ?? = ??', [joinTable, firstKey, secondKey]);
+        this.query.addJoinStatement(statement);
+        return this;
+    }
     createWhereStatement(criteria, disjunctive = false, checkEmptiness = false) {
         let subStatements = [];
         for (let key in criteria) {
@@ -86,8 +91,16 @@ class AbstractHandler {
         this.unsettableFields = fields;
         return this;
     }
+    setUnchangeableFields(fields) {
+        this.unchangeableFields = fields;
+        return this;
+    }
     setNotNullFields(fields) {
         this.notNullFields = fields;
+        return this;
+    }
+    setUnsetOrNotNullFields(fields) {
+        this.unsetOrNotNullFields = fields;
         return this;
     }
     setPreprocessor(preprocessor) {
@@ -102,7 +115,13 @@ class AbstractHandler {
         if (this.notNullFields) {
             for (let field of this.notNullFields) {
                 if (this.record[field] == null)
-                    return this.response.badRequest();
+                    return this.response.badRequest("Field '" + field + "' has to be set");
+            }
+        }
+        if (this.unsetOrNotNullFields) {
+            for (let field of this.unsetOrNotNullFields) {
+                if (this.record[field] === null)
+                    return this.response.badRequest("Field '" + field + "' has to be either unset or not null");
             }
         }
         if (this.unsettableFields) {
@@ -110,22 +129,22 @@ class AbstractHandler {
                 if (this.record[field] == null)
                     delete this.record[field];
                 else
-                    return this.response.badRequest();
+                    return this.response.badRequest("Field '" + field + "' cannot be set explicitly");
             }
         }
         for (let field in this.expectedValues) {
             if (this.record[field] == null)
                 this.record[field] = this.expectedValues[field];
             else if (this.record[field] !== this.expectedValues[field])
-                return this.response.badRequest();
+                return this.response.badRequest("Invalid value '" + this.record[field] + "' in field '" + field + "', should be '" + this.expectedValues[field] + "'");
         }
         if (this.preprocessor) {
             try {
-                this.preprocessor(this.record);
+                this.record = this.preprocessor(this.record);
             }
             catch (e) {
                 console.trace(e);
-                return this.response.badRequest();
+                return this.response.badRequest('Received record could not be processed');
             }
         }
         if (this.record) {
@@ -159,18 +178,18 @@ class AbstractHandler {
             else {
                 if (this.postprocessor) {
                     try {
-                        for (let i = 0; i < records.length; i++)
-                            this.postprocessor(records[i]);
-                        this.returnResponse(this.response, records);
+                        for (let i = 0; i < records.length; i++) {
+                            let result = this.postprocessor(records[i]);
+                            if (result !== undefined)
+                                records[i] = result;
+                        }
                     }
                     catch (e) {
                         console.trace(e);
                         return this.response.internalServerError();
                     }
                 }
-                else {
-                    this.returnResponse(this.response, records);
-                }
+                this.returnResponse(this.response, records);
             }
         });
     }

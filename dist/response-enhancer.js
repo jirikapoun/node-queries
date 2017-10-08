@@ -18,9 +18,9 @@ function responseEnhancer(request, response, next) {
         response.statusCode = 204;
         response.end();
     };
-    response.badRequest = function () {
+    response.badRequest = function (message) {
         response.statusCode = 400;
-        response.end();
+        response.end(message);
     };
     response.unauthorized = function (message) {
         response.statusCode = 401;

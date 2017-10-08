@@ -9,6 +9,9 @@ class SelectHandler extends abstract_1.default {
     joinUsing(joinTable, using) {
         return this.createJoinUsingStatement(joinTable, using);
     }
+    joinOn(joinTable, firstKey, secondKey) {
+        return this.createJoinOnStatement(joinTable, firstKey, secondKey);
+    }
     where(criteria) {
         return this.createWhereStatement(criteria);
     }
