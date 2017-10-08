@@ -16,6 +16,10 @@ export default class SelectHandler extends AbstractHandler {
   public joinUsing(joinTable: string, using: string): this {
     return this.createJoinUsingStatement(joinTable, using);
   }
+  
+  public joinOn(joinTable: string, firstKey: string, secondKey: string): this {
+    return this.createJoinOnStatement(joinTable, firstKey, secondKey);
+  }
 
   protected where(criteria: any): this {
     return this.createWhereStatement(criteria);

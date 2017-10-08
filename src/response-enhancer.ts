@@ -21,9 +21,9 @@ export default function responseEnhancer(request, response, next) {
     response.end();
   };
   
-  response.badRequest = function () {
+  response.badRequest = function (message) {
     response.statusCode = 400;
-    response.end();
+    response.end(message);
   };
   
   response.unauthorized = function (message) {

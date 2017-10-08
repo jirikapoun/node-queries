@@ -10,9 +10,9 @@ interface EnhancedResponse extends ServerResponse {
   
   noContent(): void;
   
-  badRequest(): void;
+  badRequest(message?: string): void;
   
-  unauthorized(message: string): void;
+  unauthorized(message?: string): void;
   
   forbidden(): void;
   
