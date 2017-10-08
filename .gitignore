@@ -1,4 +1,4 @@
-/nbproject/private
-/node_modules
-/npm-debug.log*
-
+nbproject/private/
+node_modules/
+npm-debug.log*
+**/*.swp
