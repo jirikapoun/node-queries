@@ -4,6 +4,7 @@ const select_count_1 = require("./handlers/select-count");
 const select_one_1 = require("./handlers/select-one");
 const insert_1 = require("./handlers/insert");
 const update_1 = require("./handlers/update");
+const delete_1 = require("./handlers/delete");
 class HandlerBuilder {
     constructor(response) {
         this.response = response;
@@ -22,6 +23,9 @@ class HandlerBuilder {
     }
     update(table) {
         return new update_1.default(this.response, table);
+    }
+    deleteFrom(table) {
+        return new delete_1.default(this.response, table);
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });

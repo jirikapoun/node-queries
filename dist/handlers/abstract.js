@@ -157,11 +157,14 @@ class AbstractHandler {
             rxjs_1.Observable
                 .combineLatest(observables)
                 .subscribe(results => {
-                let success = results.every(result => result === true);
-                if (success)
-                    this.runQuery();
-                else
+                let notFound = results.some(result => result === null);
+                let forbidden = results.some(result => result === false);
+                if (notFound)
+                    this.response.notFound();
+                else if (forbidden)
                     this.response.forbidden();
+                else
+                    this.runQuery();
             });
         }
         else
