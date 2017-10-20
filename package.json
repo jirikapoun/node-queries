@@ -1,5 +1,6 @@
 {
-  "name": "@kapoun/api",
+  "name": "node-queries",
+  "description": "Node.js library for building SQL queries and HTTP responses using SQL-like DSL",
   "version": "0.1.0",
   "author": {
     "name": "Jiri Kapoun",
