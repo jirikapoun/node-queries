@@ -1,12 +1,12 @@
 {
   "name": "@kapoun/api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Jiri Kapoun",
     "email": "kapoun4@gmail.com"
   },
-  "main": "dist/api.js",
-  "typings": "src/api.ts",
+  "main": "dist/index.js",
+  "typings": "src/index.ts",
   "files": [
     "dist",
     "src"
