@@ -6,6 +6,10 @@
     "name": "Jiri Kapoun",
     "email": "kapoun4@gmail.com"
   },
+  "bugs": {
+    "url": "https://github.com/kapoun/node-queries/issues",
+    "email": "kapoun4@gmail.com"
+  },
   "main": "dist/node-queries.js",
   "typings": "src/node-queries.ts",
   "files": [
