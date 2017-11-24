@@ -1,16 +1,15 @@
 import * as mysql        from 'mysql2';
 import IEnhancedResponse from '../../interfaces/enhanced-response';
 import AbstractBuilder   from './abstract';
-import db                from '../../db';
 
 export default class DeleteBuilder extends AbstractBuilder {
   
-  public constructor(response: IEnhancedResponse, table: string) {
+  public constructor(table: string) {
     let statement = mysql.format(
       'DELETE FROM ??',
       [ table ]
     );
-    super(response, statement, table);
+    super(statement, table);
   }
 
   protected where(criteria: any): this {

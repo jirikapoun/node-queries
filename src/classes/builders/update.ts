@@ -5,12 +5,12 @@ import db                from '../../db';
 
 export default class UpdateBuilder extends AbstractBuilder {
   
-  public constructor(response: IEnhancedResponse, table: string) {
+  public constructor(table: string) {
     let statement = mysql.format(
       'UPDATE ??',
       [ table ]
     );
-    super(response, statement, table);
+    super(statement, table);
   }
   
   public set(record: any): this {

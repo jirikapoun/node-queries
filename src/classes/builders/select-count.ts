@@ -5,12 +5,12 @@ import db                from '../../db';
 
 export default class SelectCountBuilder extends AbstractBuilder {
   
-  public constructor(response: IEnhancedResponse, table: string) {
+  public constructor(table: string) {
     let statement = mysql.format(
       'SELECT COUNT(*) AS "count" FROM ??',
       [ table, table ]
     );
-    super(response, statement, table);
+    super(statement, table);
   }
   
   public joinUsing(joinTable: string, using: string): this {

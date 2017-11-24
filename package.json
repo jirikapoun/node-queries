@@ -1,7 +1,7 @@
 {
   "name": "node-queries",
   "description": "Node.js library for building SQL queries and HTTP responses using SQL-like DSL.",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "author": {
     "name": "Jiri Kapoun",
     "email": "kapoun4@gmail.com"

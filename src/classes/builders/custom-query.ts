@@ -4,8 +4,6 @@ import db                from '../../db';
 
 export default class CustomQueryBuilder {
   
-  private response: IEnhancedResponse;
-  
   private sql:     string;
   private values_: any[]
   
@@ -14,8 +12,7 @@ export default class CustomQueryBuilder {
   
   private callback: (records: any[]) => void;
   
-  public constructor(response: IEnhancedResponse, sql: string) {
-    this.response = response;
+  public constructor(sql: string) {
     this.sql      = sql;
     this.values_  = [];
   }
@@ -36,7 +33,7 @@ export default class CustomQueryBuilder {
     return this;
   }
   
-  public execute(): void {
+  public execute(response: IEnhancedResponse): void {
     if (this.limit >= 0) {
       this.sql += ' LIMIT ?';
       this.values_.push(this.limit);
@@ -56,22 +53,22 @@ export default class CustomQueryBuilder {
         let sql = mysql.format(this.sql, this.values_);
         console.error(error);
         console.trace('Query failed: ' + sql);
-        return this.response.internalServerError();
+        return response.internalServerError();
       }
       else {
         if (this.callback) {
           try {
             for (let i = 0; i < records.length; i++)
               this.callback(records[i]);
-            return this.response.handlers.returnRecords(records);
+            return response.handlers.returnRecords(records);
           }
           catch (e) {
             console.trace(e);
-            return this.response.internalServerError();
+            return response.internalServerError();
           }
         }
         else {
-          return this.response.handlers.returnRecords(records);
+          return response.handlers.returnRecords(records);
         }
       }
     });

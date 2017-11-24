@@ -11,7 +11,6 @@ import db                from '../../db';
 
 abstract class AbstractBuilder {
   
-  private response: IEnhancedResponse;
   private query:    Query;
   private table:    string;
   
@@ -27,8 +26,7 @@ abstract class AbstractBuilder {
   
   private checks: ICheck[];
   
-  public constructor(response: IEnhancedResponse, statement: string, table?: string) {
-    this.response = response;
+  public constructor(statement: string, table?: string) {
     this.query    = new Query(statement);
     this.table    = table;
   }
@@ -168,19 +166,19 @@ abstract class AbstractBuilder {
   
   protected abstract returnResponse(response: IEnhancedResponse, records: any[]): void;
   
-  public execute(): void {
+  public execute(response: IEnhancedResponse): void {
     
     if (this.notNullFields) {
       for (let field of this.notNullFields) {
         if (this.record[field] == null)
-          return this.response.badRequest("Field '" + field + "' has to be set");
+          return response.badRequest("Field '" + field + "' has to be set");
       }
     }
     
     if (this.unsetOrNotNullFields) {
       for (let field of this.unsetOrNotNullFields) {
         if (this.record[field] === null)
-          return this.response.badRequest("Field '" + field + "' has to be either unset or not null");
+          return response.badRequest("Field '" + field + "' has to be either unset or not null");
       }
     }
     
@@ -189,7 +187,7 @@ abstract class AbstractBuilder {
         if (this.record[field] == null)
           delete this.record[field];
         else
-          return this.response.badRequest("Field '" + field + "' cannot be set explicitly");
+          return response.badRequest("Field '" + field + "' cannot be set explicitly");
       }
     }
     
@@ -197,7 +195,7 @@ abstract class AbstractBuilder {
       if (this.record[field] == null)
         this.record[field] = this.expectedValues[field];
       else if (this.record[field] !== this.expectedValues[field])
-        return this.response.badRequest("Invalid value '" + this.record[field] + "' in field '" + field + "', should be '" + this.expectedValues[field] + "'");
+        return response.badRequest("Invalid value '" + this.record[field] + "' in field '" + field + "', should be '" + this.expectedValues[field] + "'");
     }
     
     if (this.preprocessor) {
@@ -206,7 +204,7 @@ abstract class AbstractBuilder {
       }
       catch (e) {
         console.trace(e);
-        return this.response.badRequest('Received record could not be processed');
+        return response.badRequest('Received record could not be processed');
       }
     }
     
@@ -225,25 +223,25 @@ abstract class AbstractBuilder {
           let forbidden = results.some(result => result === false);
           
           if (notFound)
-            this.response.notFound();
+            response.notFound();
           else if (forbidden)
-            this.response.forbidden();
+            response.forbidden();
           else
-            this.runQuery();
+            this.runQuery(response);
         });
     }
     else
-      this.runQuery();
+      this.runQuery(response);
       
   }
   
-  private runQuery(): void {
+  private runQuery(response: IEnhancedResponse): void {
     let statement = this.query.toString();
     db.query(statement, (error: any, records: any[]) => {
       if (error) {
         console.error(error);
         console.trace('Query failed: ' + statement);
-        return this.response.internalServerError();
+        return response.internalServerError();
       }
       else {
         if (this.postprocessor) {
@@ -256,10 +254,10 @@ abstract class AbstractBuilder {
           }
           catch (e) {
             console.trace(e);
-            return this.response.internalServerError();
+            return response.internalServerError();
           }
         }
-        this.returnResponse(this.response, records);
+        this.returnResponse(response, records);
       }
     });
   }

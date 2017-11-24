@@ -7,12 +7,12 @@ export default class InsertBuilder extends AbstractBuilder {
   
   private locationPath: string;
   
-  public constructor(response: IEnhancedResponse, table: string) {
+  public constructor(table: string) {
     let statement = mysql.format(
       'INSERT INTO ??',
       [ table ]
     );
-    super(response, statement, table);
+    super(statement, table);
   }
   
   public set(record: any): this {

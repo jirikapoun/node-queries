@@ -2,8 +2,7 @@
 const mysql = require("mysql2");
 const db_1 = require("../../db");
 class CustomQueryBuilder {
-    constructor(response, sql) {
-        this.response = response;
+    constructor(sql) {
         this.sql = sql;
         this.values_ = [];
     }
@@ -20,7 +19,7 @@ class CustomQueryBuilder {
         this.callback = callback;
         return this;
     }
-    execute() {
+    execute(response) {
         if (this.limit >= 0) {
             this.sql += ' LIMIT ?';
             this.values_.push(this.limit);
@@ -38,22 +37,22 @@ class CustomQueryBuilder {
                 let sql = mysql.format(this.sql, this.values_);
                 console.error(error);
                 console.trace('Query failed: ' + sql);
-                return this.response.internalServerError();
+                return response.internalServerError();
             }
             else {
                 if (this.callback) {
                     try {
                         for (let i = 0; i < records.length; i++)
                             this.callback(records[i]);
-                        return this.response.handlers.returnRecords(records);
+                        return response.handlers.returnRecords(records);
                     }
                     catch (e) {
                         console.trace(e);
-                        return this.response.internalServerError();
+                        return response.internalServerError();
                     }
                 }
                 else {
-                    return this.response.handlers.returnRecords(records);
+                    return response.handlers.returnRecords(records);
                 }
             }
         });
