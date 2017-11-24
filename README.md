@@ -40,7 +40,7 @@ That's it. You can use queries in your controllers now:
 let router = express.Router();
 app.use(router);
 router.get('/items', function(request, response) {
-  nodeQueries(response)
+  nodeQueries
     .selectFrom('item')
     .where({
       'visible': 1
@@ -54,6 +54,6 @@ router.get('/items', function(request, response) {
       item.code = item.code.toUpperCase();
       delete item.visible;
     })
-    .execute();
+    .execute(response);
 };
 ```
