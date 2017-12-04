@@ -1,7 +1,7 @@
 {
   "name": "node-queries",
   "description": "Node.js library for building SQL queries and HTTP responses using SQL-like DSL.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": {
     "name": "Jiri Kapoun",
     "email": "kapoun4@gmail.com"
@@ -19,7 +19,8 @@
   "scripts": {
     "build": "tsc -p .",
     "build:clean": "rimraf dist ; npm run build",
-    "build:watch": "tsc -p . -w"
+    "build:watch": "tsc -p . -w",
+    "prepublish": "npm run build:clean"
   },
   "dependencies": {
     "mysql2": "^1.3.5",

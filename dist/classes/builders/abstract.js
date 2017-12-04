@@ -38,12 +38,14 @@ class AbstractBuilder {
         //        return this.response.badRequest(message);
         //      }
         //    }
+        return this;
     }
     respond(response) {
         this.response = response;
         this.successHandler = (records) => {
             return this.returnResponse(this.response, records);
         };
+        return this;
     }
     execute() {
         if (this.notNullFields) {
