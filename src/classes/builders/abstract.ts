@@ -46,7 +46,7 @@ abstract class AbstractBuilder {
   
 //  public onInvalidValue() {}
   
-  public otherwiseRespond(response: IEnhancedResponse) {
+  public otherwiseRespond(response: IEnhancedResponse): this {
     this.response = response;
     
     if (!this.successHandler) {
@@ -67,13 +67,15 @@ abstract class AbstractBuilder {
 //        return this.response.badRequest(message);
 //      }
 //    }
+    return this;
   }
   
-  public respond(response: IEnhancedResponse) {
+  public respond(response: IEnhancedResponse): this {
     this.response = response;
     this.successHandler = (records: any[]) => {
       return this.returnResponse(this.response, records);
     };
+    return this;
   }
   
   public execute(): void {
