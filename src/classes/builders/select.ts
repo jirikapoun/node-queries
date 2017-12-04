@@ -1,16 +1,16 @@
-import * as mysql        from 'mysql2';
+import {ServerResponse as Response}  from 'http';
+import * as mysql                    from 'mysql2';
 import IEnhancedResponse from '../../interfaces/enhanced-response';
 import AbstractBuilder   from './abstract';
-import db                from '../../db';
 
 export default class SelectBuilder extends AbstractBuilder {
   
-  public constructor(table: string) {
+  public constructor(connection: mysql.Connection, table: string) {
     let statement = mysql.format(
       'SELECT ??.* FROM ??',
       [ table, table ]
     );
-    super(statement, table);
+    super(connection, statement, table);
   }
   
   public joinUsing(joinTable: string, using: string): this {
@@ -20,7 +20,9 @@ export default class SelectBuilder extends AbstractBuilder {
   public joinOn(joinTable: string, firstKey: string, secondKey: string): this {
     return this.createJoinOnStatement(joinTable, firstKey, secondKey);
   }
-
+  
+  
+  
   protected where(criteria: any): this {
     return this.createWhereStatement(criteria);
   }

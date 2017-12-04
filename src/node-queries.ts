@@ -1,12 +1,8 @@
-import {ConnectionOptions} from 'mysql2';
-import Factory             from './classes/factory';
-import db                  from './db';
-import middleware          from './middleware';
+import {Connection} from 'mysql2';
+import Factory      from './classes/factory';
+import middleware   from './middleware';
 
-exports = module.exports = new Factory();
-
-exports['middleware'] = middleware;
-
-exports['init'] = function(options: ConnectionOptions) {
-  db.init(options);
+exports = module.exports = function(connection: Connection) {
+  return new Factory(connection);
 }
+exports['middleware'] = middleware;

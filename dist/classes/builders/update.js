@@ -2,9 +2,9 @@
 const mysql = require("mysql2");
 const abstract_1 = require("./abstract");
 class UpdateBuilder extends abstract_1.default {
-    constructor(table) {
+    constructor(connection, table) {
         let statement = mysql.format('UPDATE ??', [table]);
-        super(statement, table);
+        super(connection, statement, table);
     }
     set(record) {
         return this.setRecord(record);

@@ -1,14 +1,15 @@
 import * as mysql             from 'mysql2';
 import {Observable, Observer} from 'rxjs';
-import db                     from '../../db';
 import ICheck                 from '../../interfaces/check';
 
 export default class SimpleCheck implements ICheck {
   
+  private connection:    mysql.Connection;
   private statement:     string;
   private expectedValue: any;
   
-  public constructor(table: string, keyColumn: string, keyValue: any, column: string, value: any) {
+  public constructor(connection: mysql.Connection, table: string, keyColumn: string, keyValue: any, column: string, value: any) {
+    this.connection = connection;
     this.statement = mysql.format(
       'SELECT ?? AS "value" FROM ?? WHERE ?? = ?',
       [ column, table, keyColumn, keyValue ]
@@ -18,7 +19,7 @@ export default class SimpleCheck implements ICheck {
   
   public check(whereStatements: string[]): Observable<boolean> {
     return Observable.create((observer: Observer<boolean>) => {
-      db.query(this.statement, (error, rows: any[]) => {
+      this.connection.query(this.statement, (error, rows: any[]) => {
         if (error) {
           observer.error(error);
         }

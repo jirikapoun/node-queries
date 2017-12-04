@@ -7,12 +7,12 @@ import Query             from '../query';
 import SimpleCheck       from '../checks/simple';
 import ForeignCheck      from '../checks/foreign';
 import JoinedCheck       from '../checks/joined';
-import db                from '../../db';
 
 abstract class AbstractBuilder {
   
-  private query:    Query;
-  private table:    string;
+  private connection: mysql.Connection;
+  private query:      Query;
+  private table:      string;
   
   private record:               any;
   private expectedValues:       any;
@@ -26,9 +26,123 @@ abstract class AbstractBuilder {
   
   private checks: ICheck[];
   
-  public constructor(statement: string, table?: string) {
-    this.query    = new Query(statement);
-    this.table    = table;
+  private response: IEnhancedResponse;
+  private successHandler:      (records: any[]) => void;
+//  private errorHandler:        (error: any) => void;
+//  private invalidValueHandler: (message: string) => void;
+  
+  public constructor(connection: mysql.Connection, statement: string, table?: string) {
+    this.connection = connection;
+    this.query      = new Query(statement);
+    this.table      = table;
+  }
+  
+  public onSucess(handler: (records: any[]) => void): this {
+    this.successHandler = handler;
+    return this;
+  }
+  
+//  public onError() {}
+  
+//  public onInvalidValue() {}
+  
+  public otherwiseRespond(response: IEnhancedResponse) {
+    this.response = response;
+    
+    if (!this.successHandler) {
+      this.successHandler = (records: any[]) => {
+        return this.returnResponse(this.response, records);
+      };
+    }
+    
+//    if (!this.errorHandler) {
+//      this.errorHandler = (error: any) => {
+//        console.trace(error);
+//        return this.response.internalServerError();
+//      }
+//    }
+//    
+//    if (!this.invalidValueHandler) {
+//      this.invalidValueHandler = (message: string) => {
+//        return this.response.badRequest(message);
+//      }
+//    }
+  }
+  
+  public respond(response: IEnhancedResponse) {
+    this.response = response;
+    this.successHandler = (records: any[]) => {
+      return this.returnResponse(this.response, records);
+    };
+  }
+  
+  public execute(): void {
+    
+    if (this.notNullFields) {
+      for (let field of this.notNullFields) {
+        if (this.record[field] == null)
+          return this.response.badRequest("Field '" + field + "' has to be set");
+      }
+    }
+    
+    if (this.unsetOrNotNullFields) {
+      for (let field of this.unsetOrNotNullFields) {
+        if (this.record[field] === null)
+          return this.response.badRequest("Field '" + field + "' has to be either unset or not null");
+      }
+    }
+    
+    if (this.unsettableFields) {
+      for (let field of this.unsettableFields) {
+        if (this.record[field] == null)
+          delete this.record[field];
+        else
+          return this.response.badRequest("Field '" + field + "' cannot be set explicitly");
+      }
+    }
+    
+    for (let field in this.expectedValues) {
+      if (this.record[field] == null)
+        this.record[field] = this.expectedValues[field];
+      else if (this.record[field] !== this.expectedValues[field])
+        return this.response.badRequest("Invalid value '" + this.record[field] + "' in field '" + field + "', should be '" + this.expectedValues[field] + "'");
+    }
+    
+    if (this.preprocessor) {
+      try {
+        this.record = this.preprocessor(this.record);
+      }
+      catch (e) {
+        console.trace(e);
+        return this.response.badRequest('Received record could not be processed');
+      }
+    }
+    
+    if (this.record) {
+      let setStatement = mysql.escape(this.record);
+      this.query.setSetStatement(setStatement);
+    }
+    
+    if (this.checks) {
+      let whereStatements = this.query.getWhereStatements();
+      let observables = this.checks.map(check => check.check(whereStatements));
+      Observable
+        .combineLatest(observables)
+        .subscribe(results => {
+          let notFound  = results.some(result => result === null);
+          let forbidden = results.some(result => result === false);
+          
+          if (notFound)
+            this.response.notFound();
+          else if (forbidden)
+            this.response.forbidden();
+          else
+            this.runQuery();
+        });
+    }
+    else
+      this.runQuery();
+      
   }
   
   protected createJoinUsingStatement(joinTable: string, using: string): this {
@@ -99,21 +213,21 @@ abstract class AbstractBuilder {
   }
   
   protected addSimpleCheck(column: string, value: any): this {
-    let check = new SimpleCheck(this.table, column, value);
+    let check = new SimpleCheck(this.connection, this.table, column, value);
     this.checks = this.checks || [];
     this.checks.push(check);
     return this;
   }
   
   protected addJoinedCheck(joinedTable: string, using: string, column: string, value: any): this {
-    let check = new JoinedCheck(this.table, joinedTable, using, column, value);
+    let check = new JoinedCheck(this.connection, this.table, joinedTable, using, column, value);
     this.checks = this.checks || [];
     this.checks.push(check);
     return this;
   }
   
   protected addForeignCheck(table: string, keyColumn: string, keyValue: any, column: string, value: any): this {
-    let check = new ForeignCheck(table, keyColumn, keyValue, column, value);
+    let check = new ForeignCheck(this.connection, table, keyColumn, keyValue, column, value);
     this.checks = this.checks || [];
     this.checks.push(check);
     return this;
@@ -166,82 +280,13 @@ abstract class AbstractBuilder {
   
   protected abstract returnResponse(response: IEnhancedResponse, records: any[]): void;
   
-  public execute(response: IEnhancedResponse): void {
-    
-    if (this.notNullFields) {
-      for (let field of this.notNullFields) {
-        if (this.record[field] == null)
-          return response.badRequest("Field '" + field + "' has to be set");
-      }
-    }
-    
-    if (this.unsetOrNotNullFields) {
-      for (let field of this.unsetOrNotNullFields) {
-        if (this.record[field] === null)
-          return response.badRequest("Field '" + field + "' has to be either unset or not null");
-      }
-    }
-    
-    if (this.unsettableFields) {
-      for (let field of this.unsettableFields) {
-        if (this.record[field] == null)
-          delete this.record[field];
-        else
-          return response.badRequest("Field '" + field + "' cannot be set explicitly");
-      }
-    }
-    
-    for (let field in this.expectedValues) {
-      if (this.record[field] == null)
-        this.record[field] = this.expectedValues[field];
-      else if (this.record[field] !== this.expectedValues[field])
-        return response.badRequest("Invalid value '" + this.record[field] + "' in field '" + field + "', should be '" + this.expectedValues[field] + "'");
-    }
-    
-    if (this.preprocessor) {
-      try {
-        this.record = this.preprocessor(this.record);
-      }
-      catch (e) {
-        console.trace(e);
-        return response.badRequest('Received record could not be processed');
-      }
-    }
-    
-    if (this.record) {
-      let setStatement = mysql.escape(this.record);
-      this.query.setSetStatement(setStatement);
-    }
-    
-    if (this.checks) {
-      let whereStatements = this.query.getWhereStatements();
-      let observables = this.checks.map(check => check.check(whereStatements));
-      Observable
-        .combineLatest(observables)
-        .subscribe(results => {
-          let notFound  = results.some(result => result === null);
-          let forbidden = results.some(result => result === false);
-          
-          if (notFound)
-            response.notFound();
-          else if (forbidden)
-            response.forbidden();
-          else
-            this.runQuery(response);
-        });
-    }
-    else
-      this.runQuery(response);
-      
-  }
-  
-  private runQuery(response: IEnhancedResponse): void {
+  private runQuery(): void {
     let statement = this.query.toString();
-    db.query(statement, (error: any, records: any[]) => {
+    this.connection.query(statement, (error: any, records: any[]) => {
       if (error) {
         console.error(error);
         console.trace('Query failed: ' + statement);
-        return response.internalServerError();
+        return this.response.internalServerError();
       }
       else {
         if (this.postprocessor) {
@@ -254,10 +299,13 @@ abstract class AbstractBuilder {
           }
           catch (e) {
             console.trace(e);
-            return response.internalServerError();
+            return this.response.internalServerError();
           }
         }
-        this.returnResponse(response, records);
+        if (this.successHandler)
+          this.successHandler(records);
+        else
+          this.returnResponse(this.response, records);
       }
     });
   }

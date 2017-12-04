@@ -2,9 +2,9 @@
 const mysql = require("mysql2");
 const abstract_1 = require("./abstract");
 class InsertBuilder extends abstract_1.default {
-    constructor(table) {
+    constructor(connection, table) {
         let statement = mysql.format('INSERT INTO ??', [table]);
-        super(statement, table);
+        super(connection, statement, table);
     }
     set(record) {
         return this.setRecord(record);

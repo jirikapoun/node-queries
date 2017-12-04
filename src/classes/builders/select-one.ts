@@ -1,16 +1,15 @@
 import * as mysql        from 'mysql2';
 import IEnhancedResponse from '../../interfaces/enhanced-response';
 import AbstractBuilder   from './abstract';
-import db                from '../../db';
 
 export default class SelectOneBuilder extends AbstractBuilder {
   
-  public constructor(table: string) {
+  public constructor(connection: mysql.Connection, table: string) {
     let statement = mysql.format(
       'SELECT ??.* FROM ??',
       [ table, table ]
     );
-    super(statement, table);
+    super(connection, statement, table);
   }
   
   public joinUsing(joinTable: string, using: string): this {

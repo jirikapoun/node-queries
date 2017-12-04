@@ -1,8 +1,8 @@
 "use strict";
 const mysql = require("mysql2");
-const db_1 = require("../../db");
 class CustomQueryBuilder {
-    constructor(sql) {
+    constructor(connection, sql) {
+        this.connection = connection;
         this.sql = sql;
         this.values_ = [];
     }
@@ -32,7 +32,7 @@ class CustomQueryBuilder {
             this.sql += ' LIMIT 18446744073709551615 OFFSET ?';
             this.values_.push(this.offset);
         }
-        db_1.default.connection.query(this.sql, this.values_, (error, records) => {
+        this.connection.query(this.sql, this.values_, (error, records) => {
             if (error) {
                 let sql = mysql.format(this.sql, this.values_);
                 console.error(error);

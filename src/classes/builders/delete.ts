@@ -4,12 +4,12 @@ import AbstractBuilder   from './abstract';
 
 export default class DeleteBuilder extends AbstractBuilder {
   
-  public constructor(table: string) {
+  public constructor(connection: mysql.Connection, table: string) {
     let statement = mysql.format(
       'DELETE FROM ??',
       [ table ]
     );
-    super(statement, table);
+    super(connection, statement, table);
   }
 
   protected where(criteria: any): this {

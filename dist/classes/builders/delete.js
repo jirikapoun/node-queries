@@ -2,9 +2,9 @@
 const mysql = require("mysql2");
 const abstract_1 = require("./abstract");
 class DeleteBuilder extends abstract_1.default {
-    constructor(table) {
+    constructor(connection, table) {
         let statement = mysql.format('DELETE FROM ??', [table]);
-        super(statement, table);
+        super(connection, statement, table);
     }
     where(criteria) {
         return this.createWhereStatement(criteria);

@@ -1,14 +1,15 @@
 import * as mysql             from 'mysql2';
 import {Observable, Observer} from 'rxjs';
-import db                     from '../../db';
 import ICheck                 from '../../interfaces/check';
 
 export default class JoinedCheck implements ICheck {
   
+  private connection:    mysql.Connection;
   private statement:     string;
   private expectedValue: any;
   
-  public constructor(table: string, joinedTable: string, using: string, column: string, value: any) {
+  public constructor(connection: mysql.Connection, table: string, joinedTable: string, using: string, column: string, value: any) {
+    this.connection = connection;
     this.statement = mysql.format(
       'SELECT ??.?? AS "value" FROM ?? JOIN ?? USING (??)',
       [ joinedTable, column, table, joinedTable, using ]
@@ -22,7 +23,7 @@ export default class JoinedCheck implements ICheck {
       statement += ' WHERE ' + whereStatements.join(' AND ');
     
     return Observable.create((observer: Observer<boolean>) => {
-      db.query(statement, (error, rows: any[]) => {
+      this.connection.query(statement, (error, rows: any[]) => {
         if (error) {
           observer.error(error);
         }

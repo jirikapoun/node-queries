@@ -2,9 +2,9 @@
 const mysql = require("mysql2");
 const abstract_1 = require("./abstract");
 class SelectOneBuilder extends abstract_1.default {
-    constructor(table) {
+    constructor(connection, table) {
         let statement = mysql.format('SELECT ??.* FROM ??', [table, table]);
-        super(statement, table);
+        super(connection, statement, table);
     }
     joinUsing(joinTable, using) {
         return this.createJoinUsingStatement(joinTable, using);

@@ -1,15 +1,15 @@
 "use strict";
 const mysql = require("mysql2");
 const rxjs_1 = require("rxjs");
-const db_1 = require("../../db");
 class SimpleCheck {
-    constructor(table, keyColumn, keyValue, column, value) {
+    constructor(connection, table, keyColumn, keyValue, column, value) {
+        this.connection = connection;
         this.statement = mysql.format('SELECT ?? AS "value" FROM ?? WHERE ?? = ?', [column, table, keyColumn, keyValue]);
         this.expectedValue = value;
     }
     check(whereStatements) {
         return rxjs_1.Observable.create((observer) => {
-            db_1.default.query(this.statement, (error, rows) => {
+            this.connection.query(this.statement, (error, rows) => {
                 if (error) {
                     observer.error(error);
                 }

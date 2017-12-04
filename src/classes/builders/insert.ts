@@ -1,18 +1,17 @@
 import * as mysql        from 'mysql2';
 import IEnhancedResponse from '../../interfaces/enhanced-response';
 import AbstractBuilder   from './abstract';
-import db                from '../../db';
 
 export default class InsertBuilder extends AbstractBuilder {
   
   private locationPath: string;
   
-  public constructor(table: string) {
+  public constructor(connection: mysql.Connection, table: string) {
     let statement = mysql.format(
       'INSERT INTO ??',
       [ table ]
     );
-    super(statement, table);
+    super(connection, statement, table);
   }
   
   public set(record: any): this {

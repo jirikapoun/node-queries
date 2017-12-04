@@ -1,9 +1,9 @@
 "use strict";
 const mysql = require("mysql2");
 const rxjs_1 = require("rxjs");
-const db_1 = require("../../db");
 class JoinedCheck {
-    constructor(table, joinedTable, using, column, value) {
+    constructor(connection, table, joinedTable, using, column, value) {
+        this.connection = connection;
         this.statement = mysql.format('SELECT ??.?? AS "value" FROM ?? JOIN ?? USING (??)', [joinedTable, column, table, joinedTable, using]);
         this.expectedValue = value;
     }
@@ -12,7 +12,7 @@ class JoinedCheck {
         if (whereStatements && whereStatements.length > 0)
             statement += ' WHERE ' + whereStatements.join(' AND ');
         return rxjs_1.Observable.create((observer) => {
-            db_1.default.query(statement, (error, rows) => {
+            this.connection.query(statement, (error, rows) => {
                 if (error) {
                     observer.error(error);
                 }

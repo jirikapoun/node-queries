@@ -1,20 +1,21 @@
 import * as mysql        from 'mysql2';
 import IEnhancedResponse from '../../interfaces/enhanced-response';
-import db                from '../../db';
 
 export default class CustomQueryBuilder {
   
-  private sql:     string;
-  private values_: any[]
+  private connection: mysql.Connection;
+  private sql:        string;
+  private values_:    any[]
   
   private limit:  number;
   private offset: number;
   
   private callback: (records: any[]) => void;
   
-  public constructor(sql: string) {
-    this.sql      = sql;
-    this.values_  = [];
+  public constructor(connection: mysql.Connection, sql: string) {
+    this.connection = connection;
+    this.sql        = sql;
+    this.values_    = [];
   }
   
   public values(values: any[]): this {
@@ -48,7 +49,7 @@ export default class CustomQueryBuilder {
       this.values_.push(this.offset);
     }
     
-    db.connection.query(this.sql, this.values_, (error : any, records : any[]) => {
+    this.connection.query(this.sql, this.values_, (error : any, records : any[]) => {
       if (error) {
         let sql = mysql.format(this.sql, this.values_);
         console.error(error);
